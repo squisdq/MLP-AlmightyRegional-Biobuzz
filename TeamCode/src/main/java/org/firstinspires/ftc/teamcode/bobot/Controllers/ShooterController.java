@@ -12,18 +12,17 @@ import org.firstinspires.ftc.teamcode.bobot.Utilities.PowerControllers.PSVContro
 
 @Config
 public class ShooterController {
-    private final Motor fMotor, cMotor;
+    private final Motor sMotor1, sMotor2;
     private final ServoEx bServo;
 
-    private PSVController fController, cController;
+    private PSVController controller;
     private VoltageSensor battery;
 
-    private MLPLut sLut, hLut;
+    private MLPLut sLut;
 
-    public static double fP = 0.003, fS = 0.07, fV = 0.0004,
-            cP = 0.0003, cS = 0.03, cV = 0.00036;
+    public static double fP = 0.003, fS = 0.09, fV = 0.00046;
 
-    private double fCurrent = 0, cCurrent = 0, fTarget = 0, cTarget = 0;
+    private double target = 0, current = 0;
 
     private double bPos = 0;
     private bStates state;
@@ -31,29 +30,22 @@ public class ShooterController {
     private final double bBlockPos = 0.2, bSupplyPos = 0.36;
 
     public ShooterController(HardwareMap hMap){
-        fMotor = new Motor(hMap, "sMotor");
-        fMotor.setInverted(true);
-        cMotor = new Motor(hMap, "csMotor");
-        cMotor.setInverted(true);
+        sMotor1 = new Motor(hMap, "sMotor");
+//        fMotor.setInverted(true);
+        sMotor2 = new Motor(hMap, "sMotor2");
+        sMotor2.setInverted(true);
+
         bServo = new ServoEx(hMap, "bServo");
         bServo.setInverted(true);
 
         battery = hMap.voltageSensor.iterator().next();
-        fController = new PSVController(fP, fS, fV);
-        cController = new PSVController(cP, cS, cV);
+        controller = new PSVController(fP, fS, fV);
 
         sLut = MLPLut.builder()
                 .add(36, 660)
                 .add(40, 670)
                 .add(45, 690)
                 .add(72, 780)
-                .allowExtrapolation(true)
-                .build();
-
-        hLut = MLPLut.builder()
-                .add(36, 1.7)
-                .add(40, 1.7)
-                .add(72, 1.7)
                 .allowExtrapolation(true)
                 .build();
 
@@ -70,11 +62,7 @@ public class ShooterController {
     }
 
     public boolean fAtTarget(){
-        return (Math.abs(fTarget - fCurrent) <= 40);
-    }
-
-    public boolean cAtTarget(){
-        return (Math.abs(cTarget - cCurrent) <= 40);
+        return (Math.abs(target - current) <= 40);
     }
 
     public void setState(bStates state){
@@ -87,41 +75,27 @@ public class ShooterController {
     }
 
     public void setFTarget(double fTarget){
-        this.fTarget = fTarget;
+        this.target = fTarget;
     }
 
-    public void setCTarget(double cTarget){
-        this.cTarget = cTarget;
-    }
 
     public double getSLut(double distance){
         return sLut.get(distance);
     }
 
-    public double getHLut(double distance){
-        return hLut.get(distance);
-    }
-
     public void update(){
-        fCurrent =  fMotor.getCorrectedVelocity();
-        cCurrent = cMotor.getCorrectedVelocity();
+        current =  sMotor1.getCorrectedVelocity();
 
-        fController.setPSV(fP, fS, fV);
-        cController.setPSV(cP, cS, cV);
+        controller.setPSV(fP, fS, fV);
         double voltage = battery.getVoltage();
-        double fPower = fController.calculate(fCurrent, fTarget, voltage);
-        double cPower = cController.calculate(cCurrent, cTarget, voltage);
+        double fPower = controller.calculate(current, target, voltage);
 
-        if(fTarget == 0){
-            fMotor.set(0);
+        if(target == 0){
+            sMotor1.set(0);
+            sMotor2.set(0);
         } else{
-            fMotor.set(fPower);
-        }
-
-        if(cTarget == 0){
-            cMotor.set(0);
-        } else{
-            cMotor.set(cPower);
+            sMotor1.set(fPower);
+            sMotor2.set(fPower);
         }
 
         bServo.set(bPos);
@@ -129,12 +103,9 @@ public class ShooterController {
 
     public void debug(MultipleTelemetry telemetry){
         telemetry.addLine("----- SHOOTER CONTROLLER -----");
-        telemetry.addData("SC: cAtTarget", cAtTarget());
-        telemetry.addData("SC: cCurrent", cCurrent);
-        telemetry.addData("SC: cTarget", cTarget);
         telemetry.addData("SC: fAtTarget", fAtTarget());
-        telemetry.addData("SC: fCurrent", fCurrent);
-        telemetry.addData("SC: fTarget", fTarget);
+        telemetry.addData("SC: fCurrent", current);
+        telemetry.addData("SC: fTarget", target);
         telemetry.addData("bPos", bPos);
     }
 

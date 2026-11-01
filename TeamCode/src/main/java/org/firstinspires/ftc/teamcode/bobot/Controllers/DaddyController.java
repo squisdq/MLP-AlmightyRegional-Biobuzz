@@ -29,7 +29,7 @@ public class DaddyController {
     private boolean shooterOn, shooting, slowMode;
     private double tAngle, distance, dx, dy, headingDeg;
 
-    public static double slowModeK = 0.5, turnK = 0.65,  kLatency = 0, kVelocity = 0, kFlightBase = 0, kFlightDist = 0, shootPower = 0.3, shootDelay = 100, pulseOn = 120, pulseOff = 80, fixF = 750, kH = 1.7;
+    public static double slowModeK = 0.5, turnK = 0.65,  kLatency = 0, kVelocity = 0, kFlightBase = 0, kFlightDist = 0, shootPower = 0.3, shootDelay = 100, pulseOn = 120, pulseOff = 80, fixF = 750;
 
     public DaddyController(HardwareMap hMap, Follower follower){
         iController = new IntakeController(hMap);
@@ -58,17 +58,14 @@ public class DaddyController {
 
     public void intake(){
         iController.intake(1);
-        iController.transfer(1);
     }
 
     public void outtake(){
         iController.intake(-1);
-        iController.transfer(-1);
     }
 
     public void stopIntake(){
         iController.intake(0);
-        iController.transfer(0);
         afterShoot();
     }
 
@@ -78,14 +75,12 @@ public class DaddyController {
 
         if(!shooting){
             iController.intake(0);
-            iController.transfer(0);
             sController.setState(ShooterController.bStates.supply);
             shootTimer.reset();
             shooting = true;
         } else if(shootTimer.milliseconds() >= shootDelay){
 //            iController.transfer((shootTimer.milliseconds() - shootDelay) % (pulseOn + pulseOff) < pulseOn ? shootPower : 0);
-            iController.transfer(shootPower);
-            iController.intake(0.5);
+            iController.intake(shootPower);
         }
     }
 
@@ -94,16 +89,12 @@ public class DaddyController {
         sController.setState(ShooterController.bStates.block);
     }
 
-    public void setKH(double kH){
-        this.kH = kH;
-    }
-
     public void setFixF(double fixF){
         this.fixF = fixF;
     }
 
     public boolean atTarget(){
-        return sController.fAtTarget() && sController.cAtTarget();
+        return sController.fAtTarget();
     }
 
     public void switchArmState(){
@@ -231,11 +222,9 @@ public class DaddyController {
         if(shooterOn){
             boolean lut = sMode == sModes.lut;
             fTarget = lut ? sController.getSLut(distance) : fixF;
-            cTarget = lut ? fTarget * sController.getHLut(distance) : fixF * kH;
         }
 
         sController.setFTarget(fTarget);
-        sController.setCTarget(cTarget);
         tController.setAngle(tAngle);
 
         iController.update();

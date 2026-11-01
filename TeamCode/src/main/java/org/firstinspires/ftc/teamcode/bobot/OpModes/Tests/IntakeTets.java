@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.bobot.Controllers.IntakeController;
 @TeleOp(group = "!1Tests")
 public class IntakeTets extends OpMode {
     IntakeController iController;
-    public static double iPower, tPower, armPos;
+    public static double iPower, armPos;
 
     FtcDashboard dashboard = FtcDashboard.getInstance();
     Telemetry dashboardTelemetry = dashboard.getTelemetry();
@@ -29,7 +29,6 @@ public class IntakeTets extends OpMode {
     @Override
     public void loop() {
         iController.intake(iPower);
-        iController.transfer(tPower);
         iController.setPos(armPos);
 
         iController.update();

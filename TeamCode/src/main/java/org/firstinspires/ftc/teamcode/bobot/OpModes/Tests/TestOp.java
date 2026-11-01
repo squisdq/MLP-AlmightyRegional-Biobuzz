@@ -69,7 +69,6 @@ public class TestOp extends OpMode {
             gamepad2.rumble(100);
 
         daddyController.setFixF(speed);
-        daddyController.setKH(kH);
 
         daddyController.drive(true, gamepad1);
         daddyController.update();

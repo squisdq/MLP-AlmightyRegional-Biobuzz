@@ -7,10 +7,10 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
 public class IntakeController {
-    private Motor iMotor, tMotor;
+    private Motor iMotor1, iMotor2;
     private ServoEx rServo;
 
-    private double iPower, tPower;
+    private double iPower;
     private double rPos;
     private final double upPos = 0.35;
     private final double flowerPos = 1;
@@ -18,12 +18,12 @@ public class IntakeController {
     private rStates state;
 
     public IntakeController(HardwareMap hMap){
-        iMotor = new Motor(hMap, "tMotor");
-        tMotor = new Motor(hMap, "iMotor");
-        iMotor.setRunMode(Motor.RunMode.VelocityControl);
-        tMotor.setRunMode(Motor.RunMode.VelocityControl);
-        iMotor.setInverted(true);
-//        tMotor.setInverted(true);
+        iMotor1 = new Motor(hMap, "iMotor1");
+        iMotor2 = new Motor(hMap, "iMotor2");
+        iMotor1.setRunMode(Motor.RunMode.VelocityControl);
+        iMotor2.setRunMode(Motor.RunMode.VelocityControl);
+//        iMotor1.setInverted(true);
+        iMotor2.setInverted(true);
 
         rServo = new ServoEx(hMap, "armServo");
         rServo.setInverted(true);
@@ -39,10 +39,6 @@ public class IntakeController {
 
     public void intake(double power){
         this.iPower = power;
-    }
-
-    public void transfer(double power){
-        this.tPower = power;
     }
 
     public void setPos(double rPos){
@@ -66,8 +62,8 @@ public class IntakeController {
     }
 
     public void update(){
-        iMotor.set(iPower);
-        tMotor.set(tPower);
+        iMotor1.set(iPower);
+        iMotor2.set(iPower);
 
         rServo.set(rPos);
     }

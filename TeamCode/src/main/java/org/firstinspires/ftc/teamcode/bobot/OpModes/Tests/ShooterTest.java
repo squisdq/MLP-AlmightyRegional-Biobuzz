@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.bobot.Controllers.ShooterController;
 @TeleOp(group = "!1Tests")
 public class ShooterTest extends LinearOpMode {
     ShooterController sController;
-    public static double fTarget, cTarget, bPos = 0.5;
+    public static double fTarget, bPos = 0.5;
 
     MultipleTelemetry multipleTelemetry;
 
@@ -29,7 +29,6 @@ public class ShooterTest extends LinearOpMode {
         while (opModeIsActive()) {
             sController.setBPos(bPos);
             sController.setFTarget(fTarget);
-            sController.setCTarget(cTarget);
             sController.update();
             sController.debug(multipleTelemetry);
             multipleTelemetry.update();
