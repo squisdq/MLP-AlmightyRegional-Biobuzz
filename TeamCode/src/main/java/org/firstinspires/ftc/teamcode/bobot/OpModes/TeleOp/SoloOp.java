@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.bobot.Controllers.MasterController;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Input.MLPGamepad;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
 @TeleOp(group = "!0TeleOp", name = "SoloPOP")
@@ -15,6 +16,7 @@ public class SoloOp extends OpMode {
     private MasterController masterController;
     private Follower follower;
     private MultipleTelemetry multipleTelemetry;
+    private MLPGamepad pad;
 
     @Override
     public void init() {
@@ -25,43 +27,44 @@ public class SoloOp extends OpMode {
         follower.setPose(PoseStorage.startPose);
         follower.update();
 
+        pad = new MLPGamepad(gamepad1);
         multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
     }
 
     @Override
     public void loop() {
-        if(gamepad1.left_trigger >= 0.2)
+        pad.update();
+
+        if(pad.leftTrigger.down)
             masterController.intake();
-        else if(gamepad1.left_bumper)
+        else if(pad.leftBumper.down)
             masterController.outtake();
-        else if(gamepad1.right_trigger >= 0.2)
+        else if(pad.rightTrigger.down)
             masterController.shoot();
         else
             masterController.stopIntake();
 
-        if(gamepad1.rightBumperWasPressed())
+        if(pad.rightBumper.rising)
             masterController.toggleShooter();
-        if(gamepad1.startWasPressed())
+        if(pad.start.rising)
             masterController.resetPositionRight();
-        if(gamepad1.backWasPressed())
+        if(pad.back.rising)
             masterController.resetPositionLeft();
-        if(gamepad1.xWasPressed())
+        if(pad.x.rising)
             masterController.sweepTMode();
-        if(gamepad1.bWasPressed())
+        if(pad.b.rising)
             masterController.sweepGoal();
-        if(gamepad1.yWasPressed())
+        if(pad.y.rising)
             masterController.toggleArm();
-        if(gamepad1.aWasPressed())
+        if(pad.a.rising)
             masterController.setTMode(MasterController.tModes.rCentric);
-        if(gamepad1.rightStickButtonWasPressed())
-            masterController.sweepSlowMode();
 
         if(masterController.getSOn())
             gamepad1.rumble(100);
         if(masterController.getSOn() && masterController.atTarget())
             gamepad2.rumble(100);
 
-        masterController.drive(true, gamepad1, gamepad1.right_stick_button);
+        masterController.drive(true, gamepad1, pad.rightStick.down);
         masterController.update();
 
         masterController.debug(multipleTelemetry);
