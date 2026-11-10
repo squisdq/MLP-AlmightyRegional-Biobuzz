@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.bobot.OpModes.Auto.Routines;
+package org.firstinspires.ftc.teamcode.bobot.Utilities.FollowRoutines;
 
 import static com.pedropathing.ivy.commands.Commands.*;
 import static com.pedropathing.ivy.groups.Groups.deadline;
@@ -39,7 +39,7 @@ import java.util.function.BooleanSupplier;
  *
  * Импорты Follower / Command / Path / Constants проверь автодополнением.
  */
-public final class Follow {
+public final class FollowCommandBuilder {
 
     private final Follower follower;
     private final Path path;
@@ -62,13 +62,13 @@ public final class Follow {
     private double lenientInches = -1;
     private boolean holdAtEnd = false;
 
-    private Follow(Follower follower, Path path) {
+    private FollowCommandBuilder(Follower follower, Path path) {
         this.follower = follower;
         this.path = path;
     }
 
-    public static Follow path(Follower follower, Path path) {
-        return new Follow(follower, path);
+    public static FollowCommandBuilder path(Follower follower, Path path) {
+        return new FollowCommandBuilder(follower, path);
     }
 
     // ============================================================
@@ -76,34 +76,34 @@ public final class Follow {
     // ============================================================
 
     /** Медленно: maxPathSpeed = 0.4. */
-    public Follow slow() {
+    public FollowCommandBuilder slow() {
         return speed(0.4);
     }
 
     /** Быстро: полная скорость + агрессивнее тормозим в конце. */
-    public Follow fast() {
+    public FollowCommandBuilder fast() {
         this.maxPathSpeed = 1.0;
         this.brakeAggression = 1.3;
         return this;
     }
 
     /** maxPathSpeed: доля от максимальной (0..1). */
-    public Follow speed(double maxPathSpeed) {
+    public FollowCommandBuilder speed(double maxPathSpeed) {
         this.maxPathSpeed = maxPathSpeed;
         return this;
     }
 
-    public Follow brake(double brakeAggression) {
+    public FollowCommandBuilder brake(double brakeAggression) {
         this.brakeAggression = brakeAggression;
         return this;
     }
 
-    public Follow decelScale(double decelScale) {
+    public FollowCommandBuilder decelScale(double decelScale) {
         this.decelScale = decelScale;
         return this;
     }
 
-    public Follow headingRatio(double headingDriveRatio) {
+    public FollowCommandBuilder headingRatio(double headingDriveRatio) {
         this.headingRatio = headingDriveRatio;
         return this;
     }
@@ -113,19 +113,19 @@ public final class Follow {
     // ============================================================
 
     /** Запустить вместе со стартом пути. Конец = когда закончатся и путь, и эта команда. */
-    public Follow alongside(Command command) {
+    public FollowCommandBuilder alongside(Command command) {
         alongside.add(command);
         return this;
     }
 
     /** Запустить вместе со стартом пути; отменяется, когда путь закончился. */
-    public Follow during(Command command) {
+    public FollowCommandBuilder during(Command command) {
         during.add(command);
         return this;
     }
 
     /** Запустить, когда T (прогресс текущего сегмента 0..1) достиг t. */
-    public Follow atT(double t, Command command) {
+    public FollowCommandBuilder atT(double t, Command command) {
         alongside.add(sequential(
                 waitUntil(() -> running() && follower.completion() >= t),
                 command));
@@ -133,7 +133,7 @@ public final class Follow {
     }
 
     /** T-триггер для конкретного сегмента цепочки (по pathIndex). */
-    public Follow atT(int segment, double t, Command command) {
+    public FollowCommandBuilder atT(int segment, double t, Command command) {
         alongside.add(sequential(
                 waitUntil(() -> running()
                         && follower.pathIndex() == segment
@@ -143,7 +143,7 @@ public final class Follow {
     }
 
     /** Запустить, когда до конца пути осталось <= inches. */
-    public Follow atRemaining(double inches, Command command) {
+    public FollowCommandBuilder atRemaining(double inches, Command command) {
         alongside.add(sequential(
                 waitUntil(() -> running() && follower.remainingDistance() <= inches),
                 command));
@@ -151,7 +151,7 @@ public final class Follow {
     }
 
     /** Запустить, когда выполнится произвольное условие. */
-    public Follow when(BooleanSupplier condition, Command command) {
+    public FollowCommandBuilder when(BooleanSupplier condition, Command command) {
         alongside.add(sequential(
                 waitUntil(() -> running() && condition.getAsBoolean()),
                 command));
@@ -162,7 +162,7 @@ public final class Follow {
      * По прибытии отменять и команды из alongside/atT (по умолчанию ждём, пока они доработают).
      * Осторожно: триггер с t, до которого путь не дошёл, иначе будет висеть вечно.
      */
-    public Follow cancelOthersOnArrival() {
+    public FollowCommandBuilder cancelOthersOnArrival() {
         this.cancelAlongsideOnArrival = true;
         return this;
     }
@@ -172,25 +172,25 @@ public final class Follow {
     // ============================================================
 
     /** Прекратить езду, как только условие стало true. */
-    public Follow until(BooleanSupplier condition) {
+    public FollowCommandBuilder until(BooleanSupplier condition) {
         this.untilCondition = condition;
         return this;
     }
 
     /** Прекратить езду через timeoutMs миллисекунд, если не доехали. */
-    public Follow timeout(long timeoutMs) {
+    public FollowCommandBuilder timeout(long timeoutMs) {
         this.timeoutMs = timeoutMs;
         return this;
     }
 
     /** Закончить, когда follower.atParametricEnd(), не дожидаясь полной остановки. */
-    public Follow endAtParametric() {
+    public FollowCommandBuilder endAtParametric() {
         this.endAtParametric = true;
         return this;
     }
 
     /** Закончить, когда до цели < inches и скорость ниже velocityConstraint. */
-    public Follow lenient(double inches) {
+    public FollowCommandBuilder lenient(double inches) {
         this.lenientInches = inches;
         return this;
     }

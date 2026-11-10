@@ -6,7 +6,7 @@ import com.pedropathing.math.Pose;
 @Config
 
 public class PoseStorage {
-    public static Pose startPose = new Pose(0, 0, Math.PI/2);
+    public static Pose startPose = new Pose(0, 0, 0);
 
     public static final Pose rightHivePose = new Pose(60, 60);
     public static final Pose leftHivePose = new Pose(60, 88);

@@ -2,44 +2,41 @@ package org.firstinspires.ftc.teamcode.bobot.Controllers;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.seattlesolvers.solverslib.hardware.motors.Motor;
-import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Hardware.CachingEncoder;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Hardware.CachingMotor;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Hardware.CachingVoltageSensor;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Math.MLPLut;
-import org.firstinspires.ftc.teamcode.bobot.Utilities.PowerControllers.PSVController;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.PowerControllers.EnhancedPowerController;
 
 @Config
 public class ShooterController {
-    private final Motor sMotor1, sMotor2;
-    private final ServoEx bServo;
+    private final CachingMotor sMotor1, sMotor2;
+    private final CachingEncoder sEncoder1, sEncoder2;
+    private static String hubId = "Control Hub";
 
-    private PSVController controller;
-    private VoltageSensor battery;
+    private EnhancedPowerController controller;
+    private CachingVoltageSensor battery;
 
     private MLPLut sLut;
 
-    public static double fP = 0.003, fS = 0.09, fV = 0.00046;
+    public static double kP = 0.001, kS = 0.04, kV = 0.00039, threshold = 100, kHysteresis = 0.5, alpha = 1.00;
 
     private double target = 0, current = 0;
 
-    private double bPos = 0;
-    private bStates state;
-
-    private final double bBlockPos = 0.2, bSupplyPos = 0.36;
-
     public ShooterController(HardwareMap hMap){
-        sMotor1 = new Motor(hMap, "sMotor");
-//        fMotor.setInverted(true);
-        sMotor2 = new Motor(hMap, "sMotor2");
-        sMotor2.setInverted(true);
+        sMotor1 = new CachingMotor(hMap, "sMotor1");
+        sMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+        sMotor2 = new CachingMotor(hMap, "sMotor2");
+        sMotor2.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        bServo = new ServoEx(hMap, "bServo");
-        bServo.setInverted(true);
+        sEncoder1 = new CachingEncoder(sMotor1.get());
+        sEncoder2 = new CachingEncoder(sMotor2.get());
 
-        battery = hMap.voltageSensor.iterator().next();
-        controller = new PSVController(fP, fS, fV);
+        battery = new CachingVoltageSensor(hMap, hubId);
+        controller = new EnhancedPowerController(kP, kS, kV, threshold, kHysteresis, alpha);
 
         sLut = MLPLut.builder()
                 .add(36, 660)
@@ -48,45 +45,27 @@ public class ShooterController {
                 .add(72, 780)
                 .allowExtrapolation(true)
                 .build();
-
-        state = bStates.block;
-    }
-
-    public void setBPos(double bPos){
-        this.bPos = bPos;
-    }
-
-    public void initBServo(){
-        bServo.set(bPos);
-        state = bStates.block;
     }
 
     public boolean fAtTarget(){
         return (Math.abs(target - current) <= 40);
     }
 
-    public void setState(bStates state){
-        this.state = state;
-
-        if(state == bStates.block)
-            setBPos(bBlockPos);
-        else
-            setBPos(bSupplyPos);
-    }
-
-    public void setFTarget(double fTarget){
+    public void setTarget(double fTarget){
         this.target = fTarget;
     }
-
 
     public double getSLut(double distance){
         return sLut.get(distance);
     }
 
     public void update(){
-        current =  sMotor1.getCorrectedVelocity();
+        sEncoder2.update();
+        sEncoder1.update();
 
-        controller.setPSV(fP, fS, fV);
+        current = sEncoder1.getVelocity();
+
+        controller.set(kP, kS, kV, threshold, kHysteresis, alpha);
         double voltage = battery.getVoltage();
         double fPower = controller.calculate(current, target, voltage);
 
@@ -97,8 +76,6 @@ public class ShooterController {
             sMotor1.set(fPower);
             sMotor2.set(fPower);
         }
-
-        bServo.set(bPos);
     }
 
     public void debug(MultipleTelemetry telemetry){
@@ -106,10 +83,5 @@ public class ShooterController {
         telemetry.addData("SC: fAtTarget", fAtTarget());
         telemetry.addData("SC: fCurrent", current);
         telemetry.addData("SC: fTarget", target);
-        telemetry.addData("bPos", bPos);
-    }
-
-    public enum bStates {
-        block, supply
     }
 }

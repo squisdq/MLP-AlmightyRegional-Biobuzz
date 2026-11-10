@@ -6,29 +6,21 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.bobot.Controllers.ShooterController;
 
 @Config
 @TeleOp(group = "!1Tests")
 public class ShooterTest extends LinearOpMode {
-    ShooterController sController;
-    public static double fTarget, bPos = 0.5;
-
-    MultipleTelemetry multipleTelemetry;
+    public static double fTarget;
 
     @Override
     public void runOpMode(){
-        sController = new ShooterController(hardwareMap);
-
-        FtcDashboard dashboard = FtcDashboard.getInstance();
-        Telemetry dashboardTelemetry = dashboard.getTelemetry();
-        multipleTelemetry = new MultipleTelemetry(telemetry, dashboardTelemetry);
+        ShooterController sController = new ShooterController(hardwareMap);
+        MultipleTelemetry multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         waitForStart();
-        while (opModeIsActive()) {
-            sController.setBPos(bPos);
-            sController.setFTarget(fTarget);
+        while(opModeIsActive()){
+            sController.setTarget(fTarget);
             sController.update();
             sController.debug(multipleTelemetry);
             multipleTelemetry.update();

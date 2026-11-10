@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.bobot.Controllers.TurretController;
 public class TurretTest extends OpMode {
     MultipleTelemetry multipleTelemetry;
     TurretController tController;
-    public static double tAngle = 180;
+    public static double tAngle = 0;
 
     FtcDashboard dashboard = FtcDashboard.getInstance();
     Telemetry dashboardTelemetry = dashboard.getTelemetry();

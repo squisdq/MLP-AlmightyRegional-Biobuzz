@@ -1,8 +1,7 @@
-package org.firstinspires.ftc.teamcode.bobot.OpModes.Auto.OpModes;
+package org.firstinspires.ftc.teamcode.bobot.OpModes.Auto;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.utils.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;

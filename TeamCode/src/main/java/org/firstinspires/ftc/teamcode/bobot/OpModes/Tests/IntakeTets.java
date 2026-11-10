@@ -29,7 +29,6 @@ public class IntakeTets extends OpMode {
     @Override
     public void loop() {
         iController.intake(iPower);
-        iController.setPos(armPos);
 
         iController.update();
         iController.debug(multipleTelemetry);

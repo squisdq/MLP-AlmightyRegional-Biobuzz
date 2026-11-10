@@ -6,13 +6,13 @@ import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.bobot.Controllers.DaddyController;
+import org.firstinspires.ftc.teamcode.bobot.Controllers.MasterController;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
 @TeleOp(group = "!0TeleOp", name = "DuoPOP")
 public class DuoOp extends OpMode {
-    private DaddyController daddyController;
+    private MasterController masterController;
     private Follower follower;
     private MultipleTelemetry multipleTelemetry;
 
@@ -20,8 +20,8 @@ public class DuoOp extends OpMode {
     public void init() {
         follower = Constants.create(hardwareMap);
 
-        daddyController = new DaddyController(hardwareMap, follower);
-        daddyController.initServo();
+        masterController = new MasterController(hardwareMap, follower);
+        masterController.initServo();
         follower.setPose(PoseStorage.startPose);
         follower.update();
 
@@ -31,40 +31,40 @@ public class DuoOp extends OpMode {
     @Override
     public void loop() {
         if(gamepad1.left_trigger >= 0.2)
-            daddyController.intake();
+            masterController.intake();
         else if(gamepad1.left_bumper)
-            daddyController.outtake();
+            masterController.outtake();
         else if(gamepad2.right_trigger >= 0.2)
-            daddyController.shoot();
+            masterController.shoot();
         else
-            daddyController.stopIntake();
+            masterController.stopIntake();
 
         if(gamepad2.rightBumperWasPressed())
-            daddyController.toggleShooter();
+            masterController.toggleShooter();
         if(gamepad1.startWasPressed())
-            daddyController.resetPositionRight();
+            masterController.resetPositionRight();
         if(gamepad1.backWasPressed())
-            daddyController.resetPositionLeft();
+            masterController.resetPositionLeft();
         if(gamepad2.xWasPressed())
-            daddyController.sweepTMode();
+            masterController.sweepTMode();
         if(gamepad2.bWasPressed())
-            daddyController.sweepGoal();
+            masterController.sweepGoal();
         if(gamepad2.yWasPressed())
-            daddyController.switchArmState();
+            masterController.toggleArm();
         if(gamepad2.aWasPressed())
-            daddyController.setTMode(DaddyController.tModes.rCentric);
+            masterController.setTMode(MasterController.tModes.rCentric);
         if(gamepad1.rightStickButtonWasPressed())
-            daddyController.sweepSlowMode();
+            masterController.sweepSlowMode();
 
-        if(daddyController.getSOn())
+        if(masterController.getSOn())
             gamepad1.rumble(100);
-        if(daddyController.getSOn() && daddyController.atTarget())
+        if(masterController.getSOn() && masterController.atTarget())
             gamepad2.rumble(100);
 
-        daddyController.drive(true, gamepad1);
-        daddyController.update();
+        masterController.drive(true, gamepad1, gamepad1.right_stick_button);
+        masterController.update();
 
-        daddyController.debug(multipleTelemetry);
+        masterController.debug(multipleTelemetry);
         multipleTelemetry.update();
         follower.update();
     }

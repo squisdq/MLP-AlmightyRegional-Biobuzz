@@ -4,50 +4,70 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.ManualDrive;
-import com.pedropathing.math.Pose;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Math.TurretMath;
+
+import java.util.List;
 
 @Config
-public class DaddyController {
+public class MasterController {
     private final IntakeController iController;
     private final ShooterController sController;
+    private final BlockerController bController;
+    private final PushBackController pController;
     private final TurretController tController;
     private final Follower follower;
+    private final List<LynxModule> hubs;
 
     private final ElapsedTime shootTimer = new ElapsedTime();
-    private final double oX = 2.24311024, oY = 0.00;
+    private final ElapsedTime loopTimer = new ElapsedTime();
 
     private tModes tMode;
     private sModes sMode = sModes.fixed;
-    private tGoal goal;
 
-    private boolean shooterOn, shooting, slowMode;
-    private double tAngle, distance, dx, dy, headingDeg;
+    private boolean shooterOn, shooting, slowMode, armUp;
+    private double distance, loopTime;
 
-    public static double slowModeK = 0.5, turnK = 0.65,  kLatency = 0, kVelocity = 0, kFlightBase = 0, kFlightDist = 0, shootPower = 0.3, shootDelay = 100, pulseOn = 120, pulseOff = 80, fixF = 750;
+    public static double slowModeK = 0.5, turnK = 0.65, shootPower = 1, shootDelay = 300, fixF = 750;
 
-    public DaddyController(HardwareMap hMap, Follower follower){
+    public MasterController(HardwareMap hMap, Follower follower){
         iController = new IntakeController(hMap);
         sController = new ShooterController(hMap);
+        bController = new BlockerController(hMap);
+        pController = new PushBackController(hMap);
         tController = new TurretController(hMap);
         this.follower = follower;
 
-        goal = tGoal.right;
+        hubs = hMap.getAll(LynxModule.class);
+        for(LynxModule hub : hubs)
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+
+        TurretMath.right = true;
         setTMode(tModes.gCentric);
     }
 
     public void initServo(){
-        iController.initAServo();
-        sController.initBServo();
+        pController.update();
+        bController.update();
     }
 
     public void setSPower(double sPower){
         shootPower = sPower;
+    }
+
+    public void toggleArm(){
+        armUp = !armUp;
+
+        if(armUp)
+            pController.setUpPos();
+        else
+            pController.setFlowerPos();
     }
 
     public void resetPP(HardwareMap hMap){
@@ -75,18 +95,24 @@ public class DaddyController {
 
         if(!shooting){
             iController.intake(0);
-            sController.setState(ShooterController.bStates.supply);
+            bController.setSupplyPos();
             shootTimer.reset();
             shooting = true;
-        } else if(shootTimer.milliseconds() >= shootDelay){
-//            iController.transfer((shootTimer.milliseconds() - shootDelay) % (pulseOn + pulseOff) < pulseOn ? shootPower : 0);
+        } else if(shootTimer.milliseconds() >= shootDelay)
             iController.intake(shootPower);
-        }
     }
 
     public void afterShoot(){
         shooting = false;
-        sController.setState(ShooterController.bStates.block);
+        bController.setBlockPos();
+    }
+
+    public void setArmUp(){
+        pController.setUpPos();
+    }
+
+    public void setArmFlower(){
+        pController.setFlowerPos();
     }
 
     public void setFixF(double fixF){
@@ -95,14 +121,6 @@ public class DaddyController {
 
     public boolean atTarget(){
         return sController.fAtTarget();
-    }
-
-    public void switchArmState(){
-        iController.switchState();
-    }
-
-    public void setArmState(IntakeController.rStates armState){
-        iController.setState(armState);
     }
 
     public void setShooter(boolean isOn){
@@ -136,10 +154,6 @@ public class DaddyController {
         sMode = sModes.manual;
     }
 
-    public void setShootPower(double power){
-        DaddyController.shootPower = power;
-    }
-
     public void toggleManual(){
         sMode = sMode == sModes.manual ? sModes.fixed : sModes.manual;
         setTMode(tMode);
@@ -150,27 +164,15 @@ public class DaddyController {
     }
 
     public void sweepGoal(){
-        goal = goal == tGoal.left ? tGoal.right : tGoal.left;
-    }
-
-    public double calculateGCentricAngle(){
-        return Math.toDegrees(Math.atan2(dy, dx)) - headingDeg;
-    }
-
-    public double calculateFCentricAngle(){
-        return (goal == tGoal.right ? 90 : -90) - headingDeg;
-    }
-
-    public double calculateRCentricAngle(){
-        return 180;
+        TurretMath.right = !TurretMath.right;
     }
 
     public void sweepSlowMode(){
         slowMode = !slowMode;
     }
 
-    public void drive(boolean fieldCentric, Gamepad gamepad){
-        double k = slowMode ? slowModeK : 1;
+    public void drive(boolean fieldCentric, Gamepad gamepad, boolean slow){
+        double k = slow ? slowModeK : 1;
         double forward = -gamepad.left_stick_y * k;
         double strafe = -gamepad.left_stick_x * k;
         double turn = -gamepad.right_stick_x * k * turnK;
@@ -182,61 +184,45 @@ public class DaddyController {
     }
 
     public void update(){
-        boolean gCentric = tMode == tModes.gCentric;
+        loopTime = loopTimer.milliseconds();
+        loopTimer.reset();
 
-        if(gCentric)
-            goal = follower.pose().y() < 72 ? tGoal.right : tGoal.left;
+        for(LynxModule hub : hubs)
+            hub.clearBulkCache();
 
-        Pose hive = goal == tGoal.right ? PoseStorage.rightHivePose : PoseStorage.leftHivePose;
+        double tAngle;
 
-        double omega = follower.velocity().omega;
-        double heading = follower.pose().heading();
-        double rx = oX * Math.cos(heading) - oY * Math.sin(heading);
-        double ry = oX * Math.sin(heading) + oY * Math.cos(heading);
-        double vx = follower.velocity().vx - omega * ry;
-        double vy = follower.velocity().vy + omega * rx;
-        double x = follower.pose().x() + rx + vx * kLatency;
-        double y = follower.pose().y() + ry + vy * kLatency;
-        headingDeg = Math.toDegrees(heading + omega * kLatency);
-
-        dx = hive.x() - x;
-        dy = hive.y() - y;
-
-        for(int i = 0; i < 3; i++){
-            double flightTime = kFlightBase + kFlightDist * Math.hypot(dx, dy);
-            dx = hive.x() - x - kVelocity * vx * flightTime;
-            dy = hive.y() - y - kVelocity * vy * flightTime;
-        }
-
-        distance = Math.hypot(dx, dy);
-
-        if(gCentric)
-            tAngle = calculateGCentricAngle();
+        if(tMode == tModes.gCentric)
+            tAngle = TurretMath.calculateGoalCentricAngle(follower);
         else if(tMode == tModes.fCentric)
-            tAngle = calculateFCentricAngle();
+            tAngle = TurretMath.calculateFieldCentricAngle(follower);
         else
-            tAngle = calculateRCentricAngle();
+            tAngle = TurretMath.getRoboCentricAngle();
 
-        double fTarget = 0, cTarget = 0;
+        distance = TurretMath.getFutureDistance(follower);
 
-        if(shooterOn){
-            boolean lut = sMode == sModes.lut;
-            fTarget = lut ? sController.getSLut(distance) : fixF;
-        }
+        double fTarget = 0;
 
-        sController.setFTarget(fTarget);
+        if(shooterOn)
+            fTarget = sMode == sModes.lut ? sController.getSLut(distance) : fixF;
+
+        sController.setTarget(fTarget);
         tController.setAngle(tAngle);
 
         iController.update();
         if(shooterOn)
             tController.update();
         sController.update();
+        bController.update();
+        pController.update();
     }
 
     public void debug(MultipleTelemetry telemetry){
+        telemetry.addData("loopTime", loopTime);
+        telemetry.addData("loopHz", 1000 / loopTime);
         telemetry.addData("tMode", tMode);
         telemetry.addData("sMode", sMode);
-        telemetry.addData("goal", goal);
+        telemetry.addData("right", TurretMath.right);
         telemetry.addData("shooterOn", shooterOn);
         telemetry.addData("distance", distance);
         sController.debug(telemetry);
@@ -250,9 +236,5 @@ public class DaddyController {
 
     public enum sModes{
         lut, fixed, manual
-    }
-
-    public enum tGoal{
-        left, right
     }
 }

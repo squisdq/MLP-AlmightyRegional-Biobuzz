@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.bobot.OpModes.Tests;
 
-import static org.firstinspires.ftc.teamcode.bobot.Controllers.DaddyController.turnK;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.ManualDrive;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;

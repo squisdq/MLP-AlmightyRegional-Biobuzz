@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.DoubleSupplier;
 
-public class MLPGamepad {
+public class BindMapConsumer {
     public final Axes gamepad1, gamepad2;
 
     private final Gamepad g1, g2;
@@ -14,19 +14,19 @@ public class MLPGamepad {
     private BindMap active, pending;
     private BindMapEx ex;
 
-    public MLPGamepad(Gamepad g1, Gamepad g2) {
+    public BindMapConsumer(Gamepad g1, Gamepad g2) {
         this.g1 = g1;
         this.g2 = g2;
         gamepad1 = new Axes(g1);
         gamepad2 = new Axes(g2);
     }
 
-    public MLPGamepad register(BindMap map) {
+    public BindMapConsumer register(BindMap map) {
         maps.put(map.name, map);
         return this;
     }
 
-    public MLPGamepad setBindMap(BindMap map) {
+    public BindMapConsumer setBindMap(BindMap map) {
         register(map);
         pending = map;
         return this;
