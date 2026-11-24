@@ -22,9 +22,10 @@ public class ShooterController {
 
     private MLPLut sLut;
 
-    public static double kP = 0.001, kS = 0.04, kV = 0.00039, threshold = 100, kHysteresis = 0.5, alpha = 1.00;
+    public static double kP = 0.005, kS = 0.07, kV = 0.00038, threshold = 170, kHysteresis = 0.5, alpha = 1.00;
 
     private double target = 0, current = 0;
+    private boolean idle;
 
     public ShooterController(HardwareMap hMap){
         sMotor1 = new CachingMotor(hMap, "sMotor1");
@@ -39,20 +40,28 @@ public class ShooterController {
         controller = new EnhancedPowerController(kP, kS, kV, threshold, kHysteresis, alpha);
 
         sLut = MLPLut.builder()
-                .add(36, 660)
-                .add(40, 670)
-                .add(45, 690)
-                .add(72, 780)
+                .add(33, 1320)
+                .add(40, 1325)
+                .add(45,1330)
+                .add(50, 1370)
+                .add(60, 1420)
+                .add(65, 1450)
                 .allowExtrapolation(true)
                 .build();
     }
 
-    public boolean fAtTarget(){
+    public boolean atTarget(){
         return (Math.abs(target - current) <= 40);
     }
 
     public void setTarget(double fTarget){
+        idle = false;
         this.target = fTarget;
+    }
+
+    public void setIdle(double idleTarget){
+        idle = true;
+        this.target = idleTarget;
     }
 
     public double getSLut(double distance){
@@ -61,27 +70,30 @@ public class ShooterController {
 
     public void update(){
         sEncoder2.update();
-        sEncoder1.update();
 
-        current = sEncoder1.getVelocity();
+        current = sEncoder2.getVelocity();
 
-        controller.set(kP, kS, kV, threshold, kHysteresis, alpha);
         double voltage = battery.getVoltage();
-        double fPower = controller.calculate(current, target, voltage);
+        double power;
 
-        if(target == 0){
-            sMotor1.set(0);
-            sMotor2.set(0);
-        } else{
-            sMotor1.set(fPower);
-            sMotor2.set(fPower);
+        if(target == 0)
+            power = 0;
+        else if(idle)
+            power = current > target ? 0 : (kS + kV * target) * 12.0 / voltage;
+        else{
+            controller.set(kP, kS, kV, threshold, kHysteresis, alpha);
+            power = controller.calculate(current, target, voltage);
         }
+
+        sMotor1.set(power);
+        sMotor2.set(power);
     }
 
     public void debug(MultipleTelemetry telemetry){
         telemetry.addLine("----- SHOOTER CONTROLLER -----");
-        telemetry.addData("SC: fAtTarget", fAtTarget());
-        telemetry.addData("SC: fCurrent", current);
-        telemetry.addData("SC: fTarget", target);
+        telemetry.addData("SC: AtTarget", atTarget());
+        telemetry.addData("SC: Current", current);
+        telemetry.addData("SC: Target", target);
+        telemetry.addData("SC: Idle", idle);
     }
 }

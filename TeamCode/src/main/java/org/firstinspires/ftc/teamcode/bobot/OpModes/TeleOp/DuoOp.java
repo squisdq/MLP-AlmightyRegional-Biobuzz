@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.bobot.Controllers.MasterController;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Input.MLPGamepad;
@@ -18,6 +19,7 @@ public class DuoOp extends OpMode {
     private Follower follower;
     private MultipleTelemetry multipleTelemetry;
     private MLPGamepad pad1, pad2;
+    private boolean field;
 
     @Override
     public void init() {
@@ -31,6 +33,9 @@ public class DuoOp extends OpMode {
         pad1 = new MLPGamepad(gamepad1);
         pad2 = new MLPGamepad(gamepad2);
         multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        multipleTelemetry.setMsTransmissionInterval(200);
+        multipleTelemetry.setDisplayFormat(Telemetry.DisplayFormat.MONOSPACE);
+        field = true;
     }
 
     @Override
@@ -47,8 +52,10 @@ public class DuoOp extends OpMode {
         else
             masterController.stopIntake();
 
-        if(pad2.rightBumper.rising)
+        if(pad2.rightBumper.click)
             masterController.toggleShooter();
+        if(pad2.rightBumper.hold)
+            masterController.killShooter();
         if(pad1.start.rising)
             masterController.resetPositionRight();
         if(pad1.back.rising)
@@ -61,13 +68,18 @@ public class DuoOp extends OpMode {
             masterController.toggleArm();
         if(pad2.a.rising)
             masterController.setTMode(MasterController.tModes.rCentric);
+        if(pad2.dpadUp.rising)
+            masterController.toggleSWM();
 
         if(masterController.getSOn())
             gamepad1.rumble(100);
         if(masterController.getSOn() && masterController.atTarget())
             gamepad2.rumble(100);
 
-        masterController.drive(true, gamepad1, pad1.rightStick.down);
+        if(gamepad2.leftStickButtonWasPressed())
+            field = !field;
+
+        masterController.driveAnalog(field, pad1);
         masterController.update();
 
         masterController.debug(multipleTelemetry);

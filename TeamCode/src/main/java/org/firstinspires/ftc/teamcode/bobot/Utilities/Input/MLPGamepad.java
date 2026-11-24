@@ -2,10 +2,11 @@ package org.firstinspires.ftc.teamcode.bobot.Utilities.Input;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Config
 public class MLPGamepad {
-    public static double triggerThreshold = 0.5;
+    public static double triggerThreshold = 0.5, slewK = 100, deadzone = 0.05;
 
     public final Gamepad gamepad;
     public final Button a = new Button(), b = new Button(), x = new Button(), y = new Button();
@@ -15,11 +16,28 @@ public class MLPGamepad {
     public final Button leftStick = new Button(), rightStick = new Button();
     public final Button start = new Button(), back = new Button();
 
+    public double leftX, leftY, rightX, rightY;
+
+    private final ElapsedTime slewTimer = new ElapsedTime();
+
     public MLPGamepad(Gamepad gamepad) {
         this.gamepad = gamepad;
     }
 
     public void update() {
+        double step = slewK * slewTimer.seconds();
+        slewTimer.reset();
+
+//        leftX += Math.max(-step, Math.min(step, gamepad.left_stick_x - leftX));
+//        leftY += Math.max(-step, Math.min(step, gamepad.left_stick_y - leftY));
+//        rightX += Math.max(-step, Math.min(step, gamepad.right_stick_x - rightX));
+//        rightY += Math.max(-step, Math.min(step, gamepad.right_stick_y - rightY));
+
+        leftX += Math.max(-step, Math.min(step, (Math.abs(gamepad.left_stick_x) < deadzone ? 0 : gamepad.left_stick_x * Math.abs(gamepad.left_stick_x)) - leftX));
+        leftY += Math.max(-step, Math.min(step, (Math.abs(gamepad.left_stick_y) < deadzone ? 0 : gamepad.left_stick_y * Math.abs(gamepad.left_stick_y)) - leftY));
+        rightX += Math.max(-step, Math.min(step, (Math.abs(gamepad.right_stick_x) < deadzone ? 0 : gamepad.right_stick_x * Math.abs(gamepad.right_stick_x)) - rightX));
+        rightY += Math.max(-step, Math.min(step, (Math.abs(gamepad.right_stick_y) < deadzone ? 0 : gamepad.right_stick_y * Math.abs(gamepad.right_stick_y)) - rightY));
+
         a.update(gamepad.a);
         b.update(gamepad.b);
         x.update(gamepad.x);

@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 @Config
 @TeleOp(group = "!1Tests", name = "TestPOP")
 public class TestOp extends OpMode {
-    public static double speed = 1800, kH = 1.7;
+    public static double speed = 1800;
 
     private MasterController masterController;
     private Follower follower;
@@ -49,8 +49,10 @@ public class TestOp extends OpMode {
         else
             masterController.stopIntake();
 
-        if(pad.rightBumper.rising)
+        if(pad.rightBumper.click)
             masterController.toggleShooter();
+        if(pad.rightBumper.hold)
+            masterController.killShooter();
         if(pad.start.rising)
             masterController.resetPositionRight();
         if(pad.back.rising)
@@ -65,6 +67,8 @@ public class TestOp extends OpMode {
             masterController.setTMode(MasterController.tModes.rCentric);
         if(pad.leftStick.rising)
             masterController.toggleManual();
+        if(pad.dpadUp.rising)
+            masterController.toggleSWM();
 
         if(masterController.getSOn())
             gamepad1.rumble(100);
@@ -73,7 +77,7 @@ public class TestOp extends OpMode {
 
         masterController.setFixF(speed);
 
-        masterController.drive(true, gamepad1, pad.rightStick.down);
+        masterController.drive(true, pad, pad.rightStick.down);
         masterController.update();
 
         masterController.debug(multipleTelemetry);

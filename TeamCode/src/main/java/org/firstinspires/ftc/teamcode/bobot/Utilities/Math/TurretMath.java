@@ -6,26 +6,35 @@ import com.pedropathing.math.Pose;
 
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Config
 public class TurretMath {
-    public static double offsetX = 2.24311024, offsetY = 0, kLatency = 0, kTurn = 0;
-    public static boolean right = true;
+    public static double offsetX = -0.14, offsetY = 0, kLatency = 0.05, kTurn = 0.1;
+    public static boolean right = true, far = false;
 
-//    private static LSQApproximator flightTimeApproximator = LSQApproximator.builder()
-//            .degree(1)
-//            .add(40, 0.738).add(80, 1.127).add(120, 1.127)
-//            .build();
+    private static final BilinearLut timeTravelDevice = BilinearLut.builder()
+            .add(0, 0, 0.26).add(50, 0, 0.64).add(100, 0, 1.02)
+            .add(0, 40, 0.57).add(50, 40, 0.75).add(100, 40, 1.08)
+            .add(0, 80, 0.87).add(50, 80, 0.98).add(100, 80, 1.23)
+            .build();
+
+    private static Pose getHive() {
+        if (right)
+            return far ? PoseStorage.rightHivePoseFar : PoseStorage.rightHivePoseNear;
+        return far ? PoseStorage.leftHivePoseFar : PoseStorage.leftHivePoseNear;
+    }
 
     public static double calculateGoalCentricAngle(Follower follower) {
         right = follower.pose().y() < 72;
-        Pose hive = right ? PoseStorage.rightHivePose : PoseStorage.leftHivePose;
+        Pose hive = getHive();
         Pose futurePose = getFuturePose(follower);
         return Math.toDegrees(Math.atan2(hive.y() - futurePose.y(), hive.x() - futurePose.x()) - futurePose.heading());
     }
 
     public static double calculateGoalCentricAngleWithoutSOTM(Follower follower){
         right = follower.pose().y() < 72;
-        Pose hive = right ? PoseStorage.rightHivePose : PoseStorage.leftHivePose;
+        Pose hive = getHive();
         Pose rPose = follower.pose();
         return Math.toDegrees(Math.atan2(hive.y() - rPose.y(), hive.x() - rPose.x()) - rPose.heading());
     }
@@ -36,31 +45,43 @@ public class TurretMath {
     }
 
     public static double getRoboCentricAngle() {
-        return 180;
+        return 0;
     }
 
     public static double getFutureDistance(Follower follower) {
-        Pose hive = right ? PoseStorage.rightHivePose : PoseStorage.leftHivePose;
+        Pose hive = getHive();
         Pose shooter = getFuturePose(follower);
         return Math.hypot(hive.x() - shooter.x(), hive.y() - shooter.y());
     }
 
+    public static double getDistance(Follower follower){
+        Pose hive = getHive();
+        Pose shooter = follower.pose();
+        return Math.hypot(hive.x() - shooter.x(), hive.y() - shooter.y());
+    }
+
     public static Pose getFuturePose(Follower follower) {
-        Pose hive = right ? PoseStorage.rightHivePose : PoseStorage.leftHivePose;
-        double heading = follower.pose().heading();
-        double omega = follower.velocity().omega;
-        double rx = offsetX * Math.cos(heading) - offsetY * Math.sin(heading);
-        double ry = offsetX * Math.sin(heading) + offsetY * Math.cos(heading);
-        double vx = follower.velocity().vx - omega * ry;
-        double vy = follower.velocity().vy + omega * rx;
-        double x = follower.pose().x() + rx + vx * kLatency;
-        double y = follower.pose().y() + ry + vy * kLatency;
-        double flightTime = 0;
+        Pose hive = getHive();
+        Pose pose = follower.pose();
+        double vx = follower.velocity().vx;
+        double vy = follower.velocity().vy;
+        double time = 0;
 
         for (int i = 0; i < 3; i++)
-            flightTime = 0.00486758 * Math.hypot(hive.x() - x - vx * flightTime, hive.y() - y - vy * flightTime) + 0.542966;
-//            flightTime = flightTimeApproximator.get(Math.hypot(hive.x() - x - vx * flightTime, hive.y() - y - vy * flightTime));
+            time = timeTravelDevice.get(Math.abs(hive.x() - pose.x() - vx * time), Math.abs(hive.y() - pose.y() - vy * time)) + kLatency;
 
-        return new Pose(x + vx * flightTime, y + vy * flightTime, heading + omega * kTurn);
+        return new Pose(pose.x() + vx * time, pose.y() + vy * time, pose.heading() + follower.velocity().omega * kTurn);
+    }
+
+    public static double dX(Follower follower){
+        Pose hive = getHive();
+        Pose shooter = getFuturePose(follower);
+        return hive.x() - shooter.x();
+    }
+
+    public static double dY(Follower follower){
+        Pose hive = getHive();
+        Pose shooter = getFuturePose(follower);
+        return hive.y() - shooter.y();
     }
 }

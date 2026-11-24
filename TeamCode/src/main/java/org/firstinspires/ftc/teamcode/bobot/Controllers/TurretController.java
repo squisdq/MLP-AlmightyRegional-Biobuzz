@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.bobot.Controllers;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -12,6 +12,9 @@ import org.firstinspires.ftc.teamcode.bobot.Utilities.Hardware.CachingServo;
 @Config
 public class TurretController {
     private final CachingServo tServo1, tServo2;
+    private final ElapsedTime blockTimer = new ElapsedTime();
+
+    public static double jumpAngle = 120, settleMs = 500;
 
     private double tAngle = 0, tPos = 0.5;
 
@@ -25,11 +28,20 @@ public class TurretController {
     }
 
     public void setAngle(double tAngle){
-        this.tAngle = Range.clip(AngleUnit.normalizeDegrees(tAngle), -175, 175);
+        this.tAngle = Range.clip(AngleUnit.normalizeDegrees(tAngle), -160, 160);
+    }
+
+    public boolean ready(){
+        return blockTimer.milliseconds() > settleMs;
     }
 
     public void update(){
-        tPos = (175 - tAngle) / 350.0;
+        double pos = (175 - tAngle) / 350.0;
+
+        if(Math.abs(pos - tPos) * 350 > jumpAngle)
+            blockTimer.reset();
+
+        tPos = pos;
 
         tServo1.set(tPos);
         tServo2.set(tPos);
@@ -39,5 +51,6 @@ public class TurretController {
         telemetry.addLine("----- TURRET CONTROLLER -----");
         telemetry.addData("tPos", tPos);
         telemetry.addData("tAngle", tAngle);
+        telemetry.addData("ready", ready());
     }
 }

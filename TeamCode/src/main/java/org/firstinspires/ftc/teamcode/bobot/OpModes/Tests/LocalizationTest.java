@@ -4,42 +4,38 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Base.OpModeWrapper;
+import org.firstinspires.ftc.teamcode.bobot.Utilities.Input.MLPGamepad;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
-@Disabled
-@TeleOp(name = "OffsetTest")
-public class LocalizationTest extends OpModeWrapper {
+@TeleOp(group = "!1Tests")
+public class LocalizationTest extends OpMode {
     private Follower follower;
-    private double minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    private MLPGamepad pad;
 
-    public void onInit() {
+    @Override
+    public void init() {
         follower = Constants.create(hardwareMap);
-        follower.setPose(new Pose(0, 0, 0));
-        super.init();
+        follower.setPose(new Pose(72,72, 0));
+        follower.update();
+
+        pad= new MLPGamepad(gamepad1);
     }
 
-    public void onLoop() {
+    @Override
+    public void loop() {
         follower.update();
-        Pose pose = follower.pose();
+        double forward = -pad.leftY;
+        double strafe = -pad.leftX;
+        double turn = -pad.rightX;
+        follower.manual(forward, strafe, turn);
 
-        minX = Math.min(minX, pose.x());
-        maxX = Math.max(maxX, pose.x());
-        minY = Math.min(minY, pose.y());
-        maxY = Math.max(maxY, pose.y());
-
-        if (gamepad1.aWasPressed()) {
-            minX = minY = 1e9;
-            maxX = maxY = -1e9;
-        }
-
-        telemetry.addData("x", pose.x());
-        telemetry.addData("y", pose.y());
-        telemetry.addData("heading", Math.toDegrees(pose.heading()));
-        telemetry.addData("spread", Math.max(maxX - minX, maxY - minY));
-        telemetry.update();
-        super.loop();
+        telemetry.addData("x", follower.pose().x());
+        telemetry.addData("y", follower.pose().y());
+        telemetry.addData("heading", follower.pose().heading());
+        pad.update();
     }
 }

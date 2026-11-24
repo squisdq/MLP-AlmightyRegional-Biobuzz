@@ -7,7 +7,7 @@ public class EnhancedPowerController {
 
     private final PSVController psv = new PSVController(0, 0, 0);
     private final LowPassFilter filter = new LowPassFilter(1);
-    private double threshold, kHyst;
+    private double threshold, kHysteresis;
     private State state = State.spinUp;
 
     public EnhancedPowerController(double kP, double kS, double kV, double threshold, double kHyst, double alpha) {
@@ -18,7 +18,7 @@ public class EnhancedPowerController {
         psv.setPSV(kP, kS, kV);
         filter.setAlpha(alpha);
         this.threshold = threshold;
-        this.kHyst = kHyst;
+        this.kHysteresis = kHyst;
     }
 
     public State getState() {
@@ -31,7 +31,7 @@ public class EnhancedPowerController {
 
         if (target == 0) return 0.0;
 
-        state = error > (state == State.spinUp ? threshold * kHyst : threshold) ? State.spinUp : State.hold;
+        state = error > (state == State.spinUp ? threshold * kHysteresis : threshold) ? State.spinUp : State.hold;
         return state == State.spinUp ? 1.0 : Math.max(-1.0, Math.min(1.0, psv.calculate(velocity, target, voltage)));
     }
 }

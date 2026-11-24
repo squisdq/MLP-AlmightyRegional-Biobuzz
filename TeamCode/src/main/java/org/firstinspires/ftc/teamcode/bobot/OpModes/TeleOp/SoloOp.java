@@ -6,6 +6,7 @@ import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.bobot.Controllers.MasterController;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Data.PoseStorage;
 import org.firstinspires.ftc.teamcode.bobot.Utilities.Input.MLPGamepad;
@@ -29,6 +30,8 @@ public class SoloOp extends OpMode {
 
         pad = new MLPGamepad(gamepad1);
         multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        multipleTelemetry.setMsTransmissionInterval(200);
+        multipleTelemetry.setDisplayFormat(Telemetry.DisplayFormat.MONOSPACE);
     }
 
     @Override
@@ -44,8 +47,10 @@ public class SoloOp extends OpMode {
         else
             masterController.stopIntake();
 
-        if(pad.rightBumper.rising)
+        if(pad.rightBumper.click)
             masterController.toggleShooter();
+        if(pad.rightBumper.hold)
+            masterController.killShooter();
         if(pad.start.rising)
             masterController.resetPositionRight();
         if(pad.back.rising)
@@ -58,13 +63,15 @@ public class SoloOp extends OpMode {
             masterController.toggleArm();
         if(pad.a.rising)
             masterController.setTMode(MasterController.tModes.rCentric);
+        if(pad.dpadUp.rising)
+            masterController.toggleSWM();
 
         if(masterController.getSOn())
             gamepad1.rumble(100);
         if(masterController.getSOn() && masterController.atTarget())
             gamepad2.rumble(100);
 
-        masterController.drive(true, gamepad1, pad.rightStick.down);
+        masterController.drive(true, pad, pad.rightStick.down);
         masterController.update();
 
         masterController.debug(multipleTelemetry);
