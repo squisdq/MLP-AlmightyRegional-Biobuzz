@@ -22,7 +22,7 @@ public class ShooterController {
 
     private MLPLut sLut;
 
-    public static double kP = 0.005, kS = 0.07, kV = 0.00038, threshold = 170, kHysteresis = 0.5, alpha = 1.00;
+    public static double kP = 0.005, kS = 0.04, kV = 0.000405, threshold = 170, kHysteresis = 0.5, alpha = 1.00;
 
     private double target = 0, current = 0;
     private boolean idle;
@@ -40,12 +40,13 @@ public class ShooterController {
         controller = new EnhancedPowerController(kP, kS, kV, threshold, kHysteresis, alpha);
 
         sLut = MLPLut.builder()
-                .add(33, 1320)
-                .add(40, 1325)
+                .add(36, 1310)
+                .add(43, 1320)
                 .add(45,1330)
-                .add(50, 1370)
-                .add(60, 1420)
+                .add(50, 1340)
+                .add(60, 1390)
                 .add(65, 1450)
+                .add(70, 1470)
                 .allowExtrapolation(true)
                 .build();
     }

@@ -67,7 +67,7 @@ public class TurretMath {
         double vy = follower.velocity().vy;
         double time = 0;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 10; i++)
             time = timeTravelDevice.get(Math.abs(hive.x() - pose.x() - vx * time), Math.abs(hive.y() - pose.y() - vy * time)) + kLatency;
 
         return new Pose(pose.x() + vx * time, pose.y() + vy * time, pose.heading() + follower.velocity().omega * kTurn);

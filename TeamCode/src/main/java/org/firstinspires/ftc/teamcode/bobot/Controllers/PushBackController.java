@@ -8,8 +8,8 @@ import org.firstinspires.ftc.teamcode.bobot.Utilities.Hardware.CachingServo;
 public class PushBackController {
     private final CachingServo armServo;
 
-    private final double upPos = 0.79;
-    private final double flowerPos = 0.21;
+    private final double upPos = 1.0;
+    private final double flowerPos = 0.52;
     private double pos = upPos;
 
     public PushBackController(HardwareMap hMap){

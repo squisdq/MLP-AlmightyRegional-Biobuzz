@@ -23,8 +23,8 @@ import org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.AutoCommands;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
-@Autonomous(name = "Auto", group = "!0Auto")
-public class Auto extends LinearOpMode {
+@Autonomous(name = "2 TIP", group = "!0Auto")
+public class Auto2 extends LinearOpMode {
 
     private final double intakeMS = 1800, shootMS = 2000;
     private Follower follower;
