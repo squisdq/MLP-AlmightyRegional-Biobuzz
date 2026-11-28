@@ -41,12 +41,12 @@ public class ShooterController {
 
         sLut = MLPLut.builder()
                 .add(36, 1310)
-                .add(43, 1320)
-                .add(45,1330)
-                .add(50, 1340)
-                .add(60, 1390)
-                .add(65, 1450)
-                .add(70, 1470)
+                .add(43, 1340)
+                .add(45,1380)
+                .add(50, 1410)
+                .add(60, 1450)
+                .add(65, 1460)
+                .add(70, 1490)
                 .allowExtrapolation(true)
                 .build();
     }

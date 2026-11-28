@@ -18,6 +18,18 @@ import java.util.function.BooleanSupplier;
 public final class FollowCommands {
     private FollowCommands() {}
 
+    public static Command safeFollow(Follower follower, Path path){
+        return  race(follow(follower, path), sequential(waitMs(500), waitUntil(() -> follower.velocity().toVector2D().magnitude() < 1)));
+    }
+
+    public static Command safeWithT(Follower follower, Path path, Command command){
+        return race(slowFollowWithT(follower, path, 0.1, command, 1), sequential(waitMs(500), waitUntil(() -> follower.velocity().toVector2D().magnitude() < 1)));
+    }
+
+    public static Command safeAndSlow(Follower follower, Path path, double maxSpeed){
+        return  race(slowFollow(follower, path, maxSpeed), sequential(waitMs(500), waitUntil(() -> follower.velocity().toVector2D().magnitude() < 1)));
+    }
+
     public static Command slowFollow(Follower follower, Path path, double speed) {
         return lazy(() -> follow(follower,
                 path.with(Constants.foresightConfig.maxPathSpeed.at(speed))));
@@ -108,6 +120,10 @@ public final class FollowCommands {
         return sequential(
                 waitUntil(() -> isRunning(follower) && follower.completion() >= t),
                 command);
+    }
+
+    public static Command slowFollowWithT(Follower follower, Path path, double t, Command command, double speed){
+        return parallel(safeAndSlow(follower, path, speed), onT(follower, t, command));
     }
 
     public static Command onRemainingDistance(Follower follower, double inches, Command command) {

@@ -14,7 +14,12 @@ import static com.pedropathing.ivy.commands.Commands.instant;
 import static com.pedropathing.ivy.commands.Commands.waitMs;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
+import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.safeAndSlow;
+import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.safeFollow;
 import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.slowFollow;
+import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.slowFollowWithT;
+import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.with;
+import static org.firstinspires.ftc.teamcode.bobot.Utilities.AutoRoutines.FollowCommands.withT;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -28,48 +33,68 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 @Autonomous(name = "3 TIP", group = "!0Auto")
 public class Auto3 extends LinearOpMode {
     public static boolean isTipped = true;
-    private final double intakeMS = 1800, shootMS = 2000;
+    private final double intakeMS = 2000, shootMS = 1500;
     private Follower follower;
     private AutoCommands commands;
     private MasterController masterController;
 
     private final PoseFactory poseFactory = PoseFactory.degrees();
 
-    private final Pose start = poseFactory.of(56, 8, 90);
-    private final Pose toIntakeRow = poseFactory.of(9.816, 8.093, 180);
-    private final Pose toShootRow = poseFactory.of(44.647, 115.7029, 72.0643);
-    private final Pose toIntakeFlower1 = poseFactory.of(45.6687, 125.5994, 90);
-    private final Pose toIntakePreload = poseFactory.of(8.5578, 132.0825, 180);
-    private final Pose toShootPreload = poseFactory.of(37.5338, 8.1679, 103.1615);
-    private final Pose toIntakeFlower2 = poseFactory.of(20.4641, 46.8618, -179.9293);
-    private final Pose toIntakeFlower2Control1 = poseFactory.of(41.4459, 46.8877, 0);
-    private final Pose toShootFlower2 = poseFactory.of(37.1415, 12.2335, 115.7161);
+
+    private final Pose start = poseFactory.of(21, 9.1, 180);
+    private final Pose toIntakeRow = poseFactory.of(6.8194, 9.3, 180);
+    private final Pose toShootRow = poseFactory.of(40.647, 120.7029, 72.0643);
+    private final Pose toIntakeFlower1 = poseFactory.of(45.9656, 128.4112, 90);
+    private final Pose toShootFlower1 = poseFactory.of(45.9656, 120.8112, 90);
+    private final Pose toIntakePreload = poseFactory.of(8.0578, 73.5825, 180);
+    private final Pose toIntakePreloadControl1 = poseFactory.of(10, 110, 180);
+    private final Pose toIntakePreloadControl2 = poseFactory.of(56, 69, 180);
+    private final Pose toShootPreload = poseFactory.of(38.5338, 26.1679, 103.1615);
+    private final Pose toShootPreloadControl1 = poseFactory.of(65, 120.1679, 103.1615);
+    private final Pose toShootPreloadControl2 = poseFactory.of(5, 35, 103.1615);
+    private final Pose toIntakeFlower2 = poseFactory.of(10.4500, 49.3091, -180);
+    private final Pose toIntakeFlower2Control1 = poseFactory.of(41.4459, 49.1091, 0);
+    private final Pose toShootFlower2 = poseFactory.of(38.8415, 26.2335, 115.7161);
     private final Pose toPark = poseFactory.of(11.9943, 92.3477, 107.4267);
 
     public Command autoRoutine() {
         return sequential(
                 commands.shooter(true),
+                waitMs(700),
                 commands.shoot(shootMS),
                 commands.intake(),
-                slowFollow(follower, toIntakeRow()),
+                safeAndSlow(follower, toIntakeRow(), 0.2),
+                commands.shooter(false),
+                waitMs(500),
+                commands.stopIntake(),
+                commands.armFlower(),
                 follow(follower, toShootRow()),
-                commands.armFlower(),
-                follow(follower, toIntakeFlower1()),
+                commands.shooter(true),
+                commands.shoot(shootMS),
+                commands.intake(),
+                safeFollow(follower, toIntakeFlower1Cp()),
+                safeAndSlow(follower, toIntakeFlower1(), 0.5),
                 waitMs(intakeMS),
+                follow(follower, toShootFlower1()),
                 commands.shoot(shootMS),
-                commands.armUp(),
-                slowFollow(follower, toIntakePreload()),
+                commands.intake(),
+                commands.shooter(false),
+                slowFollowWithT(follower, toIntakePreload(), 0.1, commands.armUp(), 1),
+                waitMs(500),
                 follow(follower, toShootPreload()),
+                commands.shooter(true),
                 commands.stopIntake(),
-                commands.shoot(shootMS),
+                commands.shoot(shootMS+500),
                 commands.armFlower(),
                 commands.intake(),
-                follow(follower, toIntakeFlower2()),
+                commands.shooter(false),
+                safeAndSlow(follower, toIntakeFlower2(), 0.5),
                 waitMs(intakeMS),
-                commands.armUp(),
-                commands.stopIntake(),
+                commands.shooter(true),
                 follow(follower, toShootFlower2()),
                 commands.shoot(shootMS),
+                commands.shooter(false),
+                commands.armUp(),
                 follow(follower, toPark()),
                 stopOpMode()
         );
@@ -83,6 +108,7 @@ public class Auto3 extends LinearOpMode {
         follower.update();
         masterController = new MasterController(hardwareMap, follower);
         masterController.initServo();
+        masterController.setSWM(false);
         commands = new AutoCommands(masterController);
 
         waitForStart();
@@ -115,11 +141,19 @@ public class Auto3 extends LinearOpMode {
     }
 
     public Path toIntakeFlower1() {
-        return Paths.line(toShootRow, toIntakeFlower1).constant(toIntakeFlower1);
+        return Paths.line(toShootFlower1, toIntakeFlower1).constant(toIntakeFlower1);
+    }
+
+    public Path toIntakeFlower1Cp() {
+        return Paths.line(toShootRow, toShootFlower1).constant(toIntakeFlower1);
+    }
+
+    public Path toShootFlower1() {
+        return Paths.line(toIntakeFlower1, toShootFlower1).linear(toIntakeFlower1, toShootFlower1);
     }
 
     public Path toIntakePreload() {
-        return Paths.line(toIntakeFlower1, toIntakePreload).constant(toIntakePreload);
+        return Paths.curve(toShootFlower1, toIntakePreloadControl1, toIntakePreloadControl2, toIntakePreload).tangent();
     }
 
     public Path toShootPreload() {
@@ -135,7 +169,7 @@ public class Auto3 extends LinearOpMode {
     }
 
     public Path toShootFlower2() {
-        return Paths.line(toIntakeFlower2, toShootFlower2).reverseTangent();
+        return Paths.line(toIntakeFlower2, toShootFlower2).constant(toShootPreload);
     }
 
     public Path toPark() {
@@ -146,5 +180,5 @@ public class Auto3 extends LinearOpMode {
         return instant(this::requestOpModeStop);
     }
 
-    private Path conditionalPath(){if(isTipped) return toShootPreload(); else return toShootPreloadConditional();}
+//    private Path conditionalPath(){if(isTipped) return toShootPreload(); else return toShootPreloadConditional();}
 }

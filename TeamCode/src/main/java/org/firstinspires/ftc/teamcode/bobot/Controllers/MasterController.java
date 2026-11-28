@@ -36,7 +36,7 @@ public class MasterController {
     private boolean shooterOn, shooting, slowMode, armUp, SWMOn = true, speedOk, killed, isFar;
     private double distance, futureDistance, loopTime, holdAngle;
 
-    public static double slowModeK = 0.5, turnK = 0.65, shootPower = 1, shootDelay = 300, fixF = 1340, idleF = 900, minSpeed = 12, nearRadius = 15;
+    public static double slowModeK = 0.5, turnK = 0.65, shootPower = 0.8, shootDelay = 300, fixF = 1340, idleF = 900, minSpeed = 12, nearRadius = 15;
 
     public MasterController(HardwareMap hMap, Follower follower){
         iController = new IntakeController(hMap);
@@ -85,6 +85,10 @@ public class MasterController {
 
     public void toggleSWM(){
         SWMOn = !SWMOn;
+    }
+
+    public void setSWM(boolean on){
+        SWMOn = on;
     }
 
     public void sweepAim(){
@@ -263,8 +267,8 @@ public class MasterController {
                 holdAngle = tAngle;
         }
 
-        if(TurretMath.getDistance(follower) >= 65)
-            shootPower = 0.5;
+        if(TurretMath.getDistance(follower) >= 55)
+            shootPower = 0.6;
         else
             shootPower = 1;
         speedOk = !SWMOn || tMode != tModes.gCentric || distance < nearRadius || Math.hypot(follower.velocity().vx, follower.velocity().vy) >= minSpeed;
